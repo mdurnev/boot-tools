@@ -1,0 +1,37 @@
+Using perf for systemd boot analysis
+------------------------------------
+
+1. Enable kernel tracing and rebuild the kernel (CONFIG_FTRACE, CONFIG_PERF_EVENTS, CONFIG_SCHED_TRACER, etc.)
+
+
+2. Some versions of the kernel have deferred initcall for event_trace. After mounting /proc do 'cat /proc/deferred_initcalls' to make the tracer available (/sys/kernel/debug/tracing/events file is an indicator that we are ready for trace)
+
+
+3. Use perf to collect sched events, e.g.: 'perf record -e sched:sched* -g -a -c 1 -o /tmp/perf.data.raw sleep 2'
+
+    -a means that we trace all processes including systemd
+
+    -g means we get stack backtrace for each tracepoint
+
+    -c 1 - we try to capture every event
+
+    sleep 2 - we capture an event logs for 2 seconds
+
+ 
+    Perf should be started right before systemd. Systemd should have pid 1, so I use my tool which is launched as pid 1 then forks and continues to work as a child process. It initializes /sys, /proc, etc., starts perf and then calls exec for systemd as pid 1.
+
+ 
+    In my case systemd starts all user space programs within less than 2 seconds. That is why I use 'sleep 2'.
+
+
+4. Merge sched_stat* and sched_switch events to get useful stack backtraces: 'perf inject -vs -i /tmp/perf.data.raw -o /tmp/perf.data'
+ 
+
+5. Get human readable trace log: 'perf script -f comm,pid,time,cpu,event,trace,ip,sym -i /tmp/perf.data.raw'
+ 
+
+6. Graphical version: 'perf timechart -i /tmp/perf.data.raw'. It produces a huge SVG image.
+ 
+
+7. Most interesting log representation is: 'perf report --show-total-period -i /tmp/perf.data'. Only section sched_switch can be used from this report. Others are corrupted by 'perf inject'.
+
