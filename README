@@ -1,0 +1,32 @@
+System boot performance measurement helper tools
+------------------------------------------------
+
+Start measurement tools (lttng, perf, etc.) before init (systemd) is started as pid 1
+
+1. Cross-compile the tool
+2. Place the executable somewere on the target (e.g. /home/root/presd)
+3. Add init option to your kernel command line (e.g. init=/home/root/presd)
+
+
+
+LICENSE
+-------
+
+LGPLv2.1+ for all code
+
+
+
+BUILD INSTRUCTIONS
+------------------
+
+export PATH="<your cross toolchain path>:${PATH}"
+
+export CC="<your cross toolchain name prefix>-gcc"
+
+export CFLAGS="--sysroot=<your sysroot>  -march=<your arch> -Wl,--hash-style=gnu <other options>"
+
+export LD=$CC
+export LDFLAGS=$CFLAGS
+
+make
+
